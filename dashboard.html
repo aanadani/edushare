@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduShare · Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="sidebar-slot"></div>
+    <div class="main">
+      <div id="topbar-slot"></div>
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1 id="greeting">Welcome back</h1>
+            <p>Here's what's happening across your classroom resources today.</p>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="location.href='my-materials.html'">＋ Upload Material</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="ico ico-indigo">📁</div>
+            <div class="num" id="stat-total">0</div>
+            <div class="lbl">My materials</div>
+          </div>
+          <div class="stat">
+            <div class="ico ico-green">🌐</div>
+            <div class="num" id="stat-shared">0</div>
+            <div class="lbl">Shared with community</div>
+          </div>
+          <div class="stat">
+            <div class="ico ico-sky">⬇</div>
+            <div class="num" id="stat-downloads">0</div>
+            <div class="lbl">Total downloads</div>
+          </div>
+          <div class="stat">
+            <div class="ico ico-amber">💬</div>
+            <div class="num" id="stat-threads">0</div>
+            <div class="lbl">Active discussions</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Left -->
+          <div>
+            <div class="section-title">
+              <h2>Recent materials</h2>
+              <div class="spacer"></div>
+              <a href="my-materials.html">View all →</a>
+            </div>
+            <div class="grid-cards" id="recent-mats"></div>
+
+            <div class="section-title">
+              <h2>Trending in the community</h2>
+              <div class="spacer"></div>
+              <a href="shared.html">Explore →</a>
+            </div>
+            <div class="grid-cards" id="trending-mats"></div>
+          </div>
+
+          <!-- Right rail -->
+          <div>
+            <div class="card card-pad rail-card">
+              <h3>🔥 Hot discussions</h3>
+              <div id="hot-threads"></div>
+              <a class="btn btn-outline btn-block btn-sm" href="forums.html" style="margin-top:12px;">Open forums</a>
+            </div>
+
+            <div class="card card-pad rail-card">
+              <h3>👥 Colleagues to follow</h3>
+              <div class="list-row">
+                <div class="avatar sm">JO</div>
+                <div><div class="name">James Okoro</div><div class="sub">History · 12 resources</div></div>
+                <div class="spacer"></div>
+                <button class="btn btn-outline btn-sm" onclick="toast('Now following James')">Follow</button>
+              </div>
+              <div class="list-row">
+                <div class="avatar sm">PS</div>
+                <div><div class="name">Priya Sharma</div><div class="sub">Maths · 28 resources</div></div>
+                <div class="spacer"></div>
+                <button class="btn btn-outline btn-sm" onclick="toast('Now following Priya')">Follow</button>
+              </div>
+              <div class="list-row">
+                <div class="avatar sm">AT</div>
+                <div><div class="name">Ana Torres</div><div class="sub">Geography · 9 resources</div></div>
+                <div class="spacer"></div>
+                <button class="btn btn-outline btn-sm" onclick="toast('Now following Ana')">Follow</button>
+              </div>
+            </div>
+
+            <div class="card card-pad rail-card">
+              <h3>📅 Upcoming</h3>
+              <div class="list-row"><div class="sub">Sep 30</div><div class="spacer"></div><div class="name" style="font-weight:600">Staff CPD: EdTech tools</div></div>
+              <div class="list-row"><div class="sub">Oct 03</div><div class="spacer"></div><div class="name" style="font-weight:600">Grade 9 Science reports due</div></div>
+              <div class="list-row"><div class="sub">Oct 07</div><div class="spacer"></div><div class="name" style="font-weight:600">Department planning meeting</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    mountShell("dashboard");
+    const s = Store.get();
+
+    document.getElementById("greeting").textContent =
+      "Welcome back, " + s.user.name.split(" ")[0] + " 👋";
+
+    // Stats
+    document.getElementById("stat-total").textContent = s.materials.length;
+    document.getElementById("stat-shared").textContent = s.materials.filter(m => m.visibility === "shared").length;
+    document.getElementById("stat-downloads").textContent =
+      s.materials.reduce((a, m) => a + m.downloads, 0).toLocaleString();
+    document.getElementById("stat-threads").textContent = s.threads.length;
+
+    // Recent materials (first 3)
+    document.getElementById("recent-mats").innerHTML =
+      s.materials.slice(0, 3).map(m => materialCard(m)).join("");
+
+    // Trending (top 3 by downloads)
+    document.getElementById("trending-mats").innerHTML =
+      [...s.explore].sort((a, b) => b.downloads - a.downloads).slice(0, 3)
+        .map(m => materialCard(m, { explore: true })).join("");
+
+    // Hot threads (top 3 by votes)
+    document.getElementById("hot-threads").innerHTML =
+      [...s.threads].sort((a, b) => b.votes - a.votes).slice(0, 3).map(t =>
+        `<div class="list-row">
+           <div><div class="name">${t.title}</div>
+           <div class="sub">${t.category} · ${t.replies.length} replies · ▲ ${t.votes}</div></div>
+         </div>`).join("");
+  </script>
+</body>
+</html>

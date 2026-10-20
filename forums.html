@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduShare · Discussion Forums</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="sidebar-slot"></div>
+    <div class="main">
+      <div id="topbar-slot"></div>
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1>Discussion Forums</h1>
+            <p>Ask questions, swap teaching tips, and learn from colleagues across subjects.</p>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="openModal('thread-modal')">＋ New Discussion</button>
+        </div>
+
+        <div class="grid-2">
+          <!-- Threads -->
+          <div>
+            <div class="filter-row" id="cat-chips"></div>
+            <div id="threads" style="display:flex;flex-direction:column;gap:14px;"></div>
+            <div id="empty-slot"></div>
+          </div>
+
+          <!-- Rail -->
+          <div>
+            <div class="card card-pad rail-card">
+              <h3>📌 Forum guidelines</h3>
+              <ul class="muted" style="padding-left:18px;margin:0;font-size:13.5px;line-height:1.7;">
+                <li>Be respectful and constructive.</li>
+                <li>Share sources when you can.</li>
+                <li>Keep student data private.</li>
+                <li>Upvote answers that helped you.</li>
+              </ul>
+            </div>
+            <div class="card card-pad rail-card">
+              <h3>🏷️ Popular categories</h3>
+              <div class="list-row"><div class="name">Teaching Tips</div><div class="spacer"></div><span class="badge badge-gray">48</span></div>
+              <div class="list-row"><div class="name">EdTech</div><div class="spacer"></div><span class="badge badge-gray">31</span></div>
+              <div class="list-row"><div class="name">Classroom Mgmt</div><div class="spacer"></div><span class="badge badge-gray">27</span></div>
+              <div class="list-row"><div class="name">Biology</div><div class="spacer"></div><span class="badge badge-gray">19</span></div>
+            </div>
+            <div class="card card-pad rail-card">
+              <h3>⭐ Top contributors</h3>
+              <div class="list-row"><div class="avatar sm">PS</div><div><div class="name">Priya Sharma</div><div class="sub">312 helpful answers</div></div></div>
+              <div class="list-row"><div class="avatar sm">JO</div><div><div class="name">James Okoro</div><div class="sub">274 helpful answers</div></div></div>
+              <div class="list-row"><div class="avatar sm">AT</div><div><div class="name">Ana Torres</div><div class="sub">198 helpful answers</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New thread modal -->
+  <div class="modal-overlay" id="thread-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Start a new discussion</h3>
+        <div class="spacer"></div>
+        <button class="close-x" onclick="closeModal('thread-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Title</label>
+          <input class="input" id="th-title" placeholder="Ask a clear, specific question…" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select class="select" id="th-cat">
+            <option>Teaching Tips</option><option>EdTech</option><option>Classroom Mgmt</option>
+            <option>Biology</option><option>Chemistry</option><option>Physics</option>
+            <option>Maths</option><option>English</option><option>History</option><option>Geography</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Details</label>
+          <textarea class="textarea" id="th-body" placeholder="Give some context so others can help…"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeModal('thread-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="addThread()">Post discussion</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thread detail modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-head">
+        <h3 id="d-title" style="font-size:17px;">Discussion</h3>
+        <div class="spacer"></div>
+        <button class="close-x" onclick="closeModal('detail-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="flex" style="gap:10px;margin-bottom:6px;">
+          <div class="avatar sm" id="d-init">SM</div>
+          <div><span class="name" id="d-author" style="font-weight:700;"></span>
+          <span class="muted" id="d-when" style="font-size:12px;margin-left:6px;"></span></div>
+          <div class="spacer"></div>
+          <span class="badge" id="d-cat"></span>
+        </div>
+        <p id="d-body" style="color:var(--text);"></p>
+        <div class="section-title"><h2 style="font-size:15px;" id="d-reply-count">Replies</h2></div>
+        <div id="d-replies"></div>
+        <div class="field" style="margin-top:16px;">
+          <label>Add your reply</label>
+          <textarea class="textarea" id="d-reply-text" placeholder="Share your thoughts…"></textarea>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addReply()">Post reply</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    mountShell("forums");
+
+    let activeCat = "All";
+    let openThreadId = null;
+
+    function categories() {
+      const s = Store.get();
+      const cats = new Set(["All"]);
+      s.threads.forEach(t => cats.add(t.category));
+      return [...cats];
+    }
+
+    function renderChips() {
+      document.getElementById("cat-chips").innerHTML = categories().map(c =>
+        `<span class="chip ${activeCat === c ? "active" : ""}" onclick="setCat('${c}')">${c}</span>`
+      ).join("");
+    }
+    function setCat(c) { activeCat = c; render(); }
+
+    function render() {
+      const s = Store.get();
+      let list = [...s.threads].sort((a, b) => b.votes - a.votes);
+      if (activeCat !== "All") list = list.filter(t => t.category === activeCat);
+
+      renderChips();
+      document.getElementById("threads").innerHTML = list.map(t => `
+        <div class="forum-item">
+          <div class="vote">
+            <button onclick="vote(${t.id});event.stopPropagation();">▲</button>
+            <div class="count">${t.votes}</div>
+          </div>
+          <div class="forum-main" onclick="openThread(${t.id})" style="cursor:pointer;">
+            <h3>${t.title}</h3>
+            <p class="excerpt">${t.body}</p>
+            <div class="forum-meta">
+              <span class="badge badge-blue">${t.category}</span>
+              <span class="forum-stat"><div class="avatar sm" style="width:24px;height:24px;font-size:11px;">${t.authorInit}</div> ${t.author}</span>
+              <span class="forum-stat">💬 ${t.replies.length} replies</span>
+              <span class="forum-stat">🕒 ${t.when}</span>
+            </div>
+          </div>
+        </div>`).join("");
+
+      document.getElementById("empty-slot").innerHTML = list.length ? "" :
+        `<div class="empty"><div class="big">💬</div>No discussions in this category yet.</div>`;
+
+      if (openThreadId) renderDetail();
+    }
+    window.__rerender = render;
+
+    function vote(id) {
+      const s = Store.get();
+      const t = s.threads.find(x => x.id === id);
+      if (t) { t.votes++; Store.set(s); render(); toast("Upvoted"); }
+    }
+
+    function openThread(id) {
+      openThreadId = id;
+      renderDetail();
+      openModal("detail-modal");
+    }
+
+    function renderDetail() {
+      const s = Store.get();
+      const t = s.threads.find(x => x.id === openThreadId);
+      if (!t) return;
+      document.getElementById("d-title").textContent = t.title;
+      document.getElementById("d-author").textContent = t.author;
+      document.getElementById("d-init").textContent = t.authorInit;
+      document.getElementById("d-when").textContent = t.when;
+      document.getElementById("d-cat").textContent = t.category;
+      document.getElementById("d-body").textContent = t.body;
+      document.getElementById("d-reply-count").textContent = t.replies.length + " Replies";
+      document.getElementById("d-replies").innerHTML = t.replies.length
+        ? t.replies.map(r => `
+          <div class="reply">
+            <div class="avatar sm">${r.init}</div>
+            <div class="reply-body">
+              <span class="who">${r.who}</span><span class="when">${r.when}</span>
+              <p>${r.text}</p>
+            </div>
+          </div>`).join("")
+        : `<p class="muted">No replies yet — be the first to help!</p>`;
+    }
+
+    function addReply() {
+      const text = document.getElementById("d-reply-text").value.trim();
+      if (!text) { toast("Write something first"); return; }
+      const s = Store.get();
+      const t = s.threads.find(x => x.id === openThreadId);
+      t.replies.push({ who: s.user.name, init: s.user.initials, when: "just now", text });
+      Store.set(s);
+      document.getElementById("d-reply-text").value = "";
+      toast("Reply posted");
+      render();
+    }
+
+    function addThread() {
+      const title = document.getElementById("th-title").value.trim();
+      const body = document.getElementById("th-body").value.trim();
+      if (!title) { toast("Please add a title"); return; }
+      const s = Store.get();
+      s.threads.unshift({
+        id: Date.now(),
+        title, body: body || "(no details provided)",
+        author: s.user.name, authorInit: s.user.initials,
+        category: document.getElementById("th-cat").value,
+        votes: 1, replies: [], when: "just now", tags: [],
+      });
+      Store.set(s);
+      closeModal("thread-modal");
+      document.getElementById("th-title").value = "";
+      document.getElementById("th-body").value = "";
+      toast("Discussion posted");
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

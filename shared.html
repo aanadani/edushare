@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduShare · Explore &amp; Shared</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="sidebar-slot"></div>
+    <div class="main">
+      <div id="topbar-slot"></div>
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1>Explore &amp; Shared</h1>
+            <p>Discover resources shared by teachers everywhere — and see what you've contributed to the community.</p>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="location.href='my-materials.html'">＋ Share your own</button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <input class="input" id="q" placeholder="🔍 Search shared materials…" style="max-width:320px" oninput="render()" />
+          <select class="select" id="subject" style="width:auto" onchange="render()">
+            <option value="">All subjects</option>
+            <option>Biology</option><option>Chemistry</option><option>Physics</option>
+            <option>Maths</option><option>English</option><option>History</option><option>Geography</option>
+          </select>
+          <select class="select" id="grade" style="width:auto" onchange="render()">
+            <option value="">All grades</option>
+            <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+            <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+          </select>
+          <div class="spacer"></div>
+          <select class="select" id="sort" style="width:auto" onchange="render()">
+            <option value="popular">Sort: Most popular</option>
+            <option value="recent">Sort: Recent</option>
+            <option value="title">Sort: A–Z</option>
+          </select>
+        </div>
+
+        <!-- Tabs -->
+        <div class="filter-row">
+          <span class="chip active" id="tab-explore" onclick="setTab('explore')">🌐 Community library</span>
+          <span class="chip" id="tab-mine" onclick="setTab('mine')">📤 Shared by me</span>
+        </div>
+
+        <div class="grid-cards" id="grid"></div>
+        <div id="empty-slot"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    mountShell("explore");
+
+    let tab = "explore";
+    function setTab(t) {
+      tab = t;
+      document.getElementById("tab-explore").classList.toggle("active", t === "explore");
+      document.getElementById("tab-mine").classList.toggle("active", t === "mine");
+      render();
+    }
+
+    function render() {
+      const s = Store.get();
+      let list = tab === "explore"
+        ? [...s.explore]
+        : s.materials.filter(m => m.visibility === "shared");
+
+      const q = document.getElementById("q").value.toLowerCase();
+      const subj = document.getElementById("subject").value;
+      const grade = document.getElementById("grade").value;
+
+      if (q) list = list.filter(m => m.title.toLowerCase().includes(q) || m.subject.toLowerCase().includes(q));
+      if (subj) list = list.filter(m => m.subject === subj);
+      if (grade) list = list.filter(m => m.grade === grade);
+
+      const sort = document.getElementById("sort").value;
+      if (sort === "popular") list.sort((a, b) => b.downloads - a.downloads);
+      else if (sort === "title") list.sort((a, b) => a.title.localeCompare(b.title));
+
+      document.getElementById("grid").innerHTML =
+        list.map(m => materialCard(m, { explore: tab === "explore" })).join("");
+      document.getElementById("empty-slot").innerHTML = list.length ? "" :
+        `<div class="empty"><div class="big">🔍</div>${tab === "mine"
+          ? "You haven't shared any materials yet. Share one from <a href='my-materials.html'>My Materials</a>."
+          : "No community materials match your filters."}</div>`;
+    }
+    window.__rerender = render;
+    render();
+  </script>
+</body>
+</html>

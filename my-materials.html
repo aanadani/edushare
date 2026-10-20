@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduShare · My Materials</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div id="sidebar-slot"></div>
+    <div class="main">
+      <div id="topbar-slot"></div>
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1>My Materials</h1>
+            <p>Your private lesson library. Keep resources for yourself, or share them with the community in one click.</p>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="openModal('upload-modal')">＋ Upload Material</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="toolbar">
+          <div class="filter-row" id="filter-chips" style="margin:0;"></div>
+          <div class="spacer"></div>
+          <select class="select" id="sort" style="width:auto" onchange="render()">
+            <option value="recent">Sort: Recent</option>
+            <option value="downloads">Sort: Most downloaded</option>
+            <option value="title">Sort: A–Z</option>
+          </select>
+        </div>
+
+        <div class="grid-cards" id="mats-grid"></div>
+        <div id="empty-slot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload modal -->
+  <div class="modal-overlay" id="upload-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Upload a new material</h3>
+        <div class="spacer"></div>
+        <button class="close-x" onclick="closeModal('upload-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Title</label>
+          <input class="input" id="up-title" placeholder="e.g. Photosynthesis — Interactive Slides" />
+        </div>
+        <div class="flex" style="gap:14px;">
+          <div class="field" style="flex:1;">
+            <label>Subject</label>
+            <select class="select" id="up-subject">
+              <option>Biology</option><option>Chemistry</option><option>Physics</option>
+              <option>Maths</option><option>English</option><option>History</option><option>Geography</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1;">
+            <label>Type</label>
+            <select class="select" id="up-type">
+              <option>Slides</option><option>Worksheet</option><option>Quiz</option>
+              <option>Document</option><option>Video</option><option>Flashcards</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex" style="gap:14px;">
+          <div class="field" style="flex:1;">
+            <label>Grade</label>
+            <select class="select" id="up-grade">
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1;">
+            <label>Visibility</label>
+            <select class="select" id="up-visibility">
+              <option value="private">Private (only me)</option>
+              <option value="shared">Shared with community</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>File</label>
+          <input class="input" type="file" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeModal('upload-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="addMaterial()">Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    mountShell("my");
+
+    let activeFilter = "all";
+    const filters = ["all", "shared", "private", "Biology", "Chemistry", "Physics"];
+
+    function renderChips() {
+      document.getElementById("filter-chips").innerHTML = filters.map(f =>
+        `<span class="chip ${activeFilter === f ? "active" : ""}" onclick="setFilter('${f}')">${f === "all" ? "All" : f}</span>`
+      ).join("");
+    }
+    function setFilter(f) { activeFilter = f; render(); }
+
+    function render() {
+      const s = Store.get();
+      let list = [...s.materials];
+
+      if (activeFilter === "shared") list = list.filter(m => m.visibility === "shared");
+      else if (activeFilter === "private") list = list.filter(m => m.visibility === "private");
+      else if (activeFilter !== "all") list = list.filter(m => m.subject === activeFilter);
+
+      const sort = document.getElementById("sort").value;
+      if (sort === "downloads") list.sort((a, b) => b.downloads - a.downloads);
+      else if (sort === "title") list.sort((a, b) => a.title.localeCompare(b.title));
+
+      renderChips();
+      document.getElementById("mats-grid").innerHTML = list.map(m => materialCard(m)).join("");
+      document.getElementById("empty-slot").innerHTML = list.length ? "" :
+        `<div class="empty"><div class="big">📭</div>No materials match this filter yet.</div>`;
+    }
+    window.__rerender = render;
+
+    function addMaterial() {
+      const title = document.getElementById("up-title").value.trim();
+      if (!title) { toast("Please enter a title"); return; }
+      const s = Store.get();
+      const icons = { Slides: "📊", Worksheet: "📄", Quiz: "📝", Document: "📃", Video: "🎬", Flashcards: "🃏" };
+      const colors = ["#4f46e5", "#0ea5e9", "#16a34a", "#d97706", "#7c3aed", "#dc2626"];
+      s.materials.unshift({
+        id: Date.now(),
+        title,
+        type: document.getElementById("up-type").value,
+        subject: document.getElementById("up-subject").value,
+        grade: document.getElementById("up-grade").value,
+        visibility: document.getElementById("up-visibility").value,
+        size: (Math.random() * 5 + 0.4).toFixed(1) + " MB",
+        downloads: 0,
+        updated: "just now",
+        owner: s.user.name, ownerInit: s.user.initials,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        icon: icons[document.getElementById("up-type").value] || "📄",
+      });
+      Store.set(s);
+      closeModal("upload-modal");
+      document.getElementById("up-title").value = "";
+      toast("Material uploaded to your library");
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
