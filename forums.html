@@ -160,8 +160,8 @@
             <div class="forum-meta">
               <span class="badge badge-blue">${t.category}</span>
               <span class="forum-stat"><div class="avatar sm" style="width:24px;height:24px;font-size:11px;">${t.authorInit}</div> ${t.author}</span>
-              <span class="forum-stat">💬 ${t.replies.length} replies</span>
-              <span class="forum-stat">🕒 ${t.when}</span>
+              <span class="forum-stat">💬 ${t.replies.length} ${tr("replies")}</span>
+              <span class="forum-stat">🕒 ${tr(t.when)}</span>
             </div>
           </div>
         </div>`).join("");
@@ -195,7 +195,7 @@
       document.getElementById("d-when").textContent = t.when;
       document.getElementById("d-cat").textContent = t.category;
       document.getElementById("d-body").textContent = t.body;
-      document.getElementById("d-reply-count").textContent = t.replies.length + " Replies";
+      document.getElementById("d-reply-count").textContent = t.replies.length + " " + tr("Replies");
       document.getElementById("d-replies").innerHTML = t.replies.length
         ? t.replies.map(r => `
           <div class="reply">

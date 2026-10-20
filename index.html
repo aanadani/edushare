@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <button class="lang-btn" title="Language / Język" onclick="toggleLang()"
+    style="position:fixed;top:16px;right:16px;z-index:50;"
+    id="lang-btn">🌐 <span>PL</span></button>
   <div class="auth-wrap">
     <!-- Hero -->
     <section class="auth-hero">
@@ -61,5 +64,8 @@
   </div>
 
   <script src="js/app.js"></script>
+  <script>
+    document.querySelector("#lang-btn span").textContent = currentLang() === "pl" ? "EN" : "PL";
+  </script>
 </body>
 </html>

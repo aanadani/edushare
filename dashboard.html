@@ -112,7 +112,7 @@
     const s = Store.get();
 
     document.getElementById("greeting").textContent =
-      "Welcome back, " + s.user.name.split(" ")[0] + " 👋";
+      tr("Welcome back,") + " " + s.user.name.split(" ")[0] + " 👋";
 
     // Stats
     document.getElementById("stat-total").textContent = s.materials.length;
@@ -135,7 +135,7 @@
       [...s.threads].sort((a, b) => b.votes - a.votes).slice(0, 3).map(t =>
         `<div class="list-row">
            <div><div class="name">${t.title}</div>
-           <div class="sub">${t.category} · ${t.replies.length} replies · ▲ ${t.votes}</div></div>
+           <div class="sub">${tr(t.category)} · ${t.replies.length} ${tr("replies")} · ▲ ${t.votes}</div></div>
          </div>`).join("");
   </script>
 </body>
